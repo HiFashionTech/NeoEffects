@@ -79,8 +79,24 @@ void NeoWindow::fillBlack()
 {
     fillColor(0);
 }
+////////////////////////////////
+// Effects here
 
+void NeoWindow::setHoldEfx(int delayTime)
+{
+  printId(); Serial.println("    set to use hold effect");
+  efxDone = false;
+  effectDelay = delayTime;
+  curUpdateFunc = &NeoWindow::holdUpdateEfx;
+}
 
+void NeoWindow::holdUpdateEfx(void) 
+{
+  // once we are called the hold time has passed so mark us as done
+  efxDone = true;  
+}
+
+///////////////
 void NeoWindow::setCircleEfx(uint32_t color, uint32_t delayTime)
 {
   printId(); Serial.println("    set to use circle effect");
@@ -177,10 +193,149 @@ void NeoWindow::blinkUpdateEfx()
   } else {
       fillBlack();
       blink_state = true;
+      blink_step++;
   }
   
-  blink_step++;
   if (blink_maxCount > 0 && blink_step > blink_maxCount)
     efxDone = true;
+}
+
+// couple flags for the state
+static const int sparkleFLASH = 1;
+static const int sparkleTWEEN = 0;
+
+void NeoWindow::setSparkleEfx(uint32_t color, int flashTime, int tweenTime, int count)
+{
+  efxDone = false;
+  effectDelay = flashTime;
+  curUpdateFunc = &NeoWindow::sparkleEfxUpdate;
+
+  sparkleColor = color;
+  sparkleFlashTime = flashTime;
+  sparkleTweenTime = tweenTime;
+  sparkleMaxCount = count;
+  sparkleCount = 0;
+  sparkleState = sparkleFLASH;
+  sparkleCurPixel= random(myStartPixel, myEndPixel);
+  fillBlack(); // clear it
+  
+  // now turn on just that pixel
+  myStrip->setPixelColor(sparkleCurPixel,sparkleColor);
+  myStrip->setStripChanged(); // mark the strip changed
+}
+
+void NeoWindow::sparkleEfxUpdate(void)
+{
+  if (sparkleState == sparkleFLASH) {
+    // it is on, turn off and set to sparkleTWEEN
+    myStrip->setPixelColor(sparkleCurPixel, 0);
+    sparkleState = sparkleTWEEN;
+    effectDelay = sparkleTweenTime;
+  } else {
+    // it is in TWEEN, so turn to FLASH: select new pixel and turn it on
+    sparkleCurPixel= random(myStartPixel, myEndPixel);
+    myStrip->setPixelColor(sparkleCurPixel, sparkleColor);
+    sparkleState = sparkleFLASH;
+    effectDelay = sparkleFlashTime;
+  }
+
+  sparkleCount++;
+  if (sparkleMaxCount > 0 && sparkleCount > sparkleMaxCount)
+  {
+    efxDone = true;
+  }
+}
+
+////////////////////
+// Fade = linear fade between two colors, cycle makes if fade back
+// fade Phase
+static const int fadeFadeIn = 0;
+static const int fadeFadeOut = 1;
+
+void NeoWindow::setFadeEfx(uint32_t fromColor, uint32_t toColor, int fadeTime, int type, int count)
+{
+  efxDone = false;
+  effectDelay = fadeTime;
+  curUpdateFunc = &NeoWindow::fadeEfxUpdate;
+
+  fadeFromColor = fromColor;
+  fadeToColor = toColor;
+  fadeType = type;
+  fadeMaxCount = count;
+  
+  // internally we use seperate RGB values
+   fadeFromR = myStrip->getRed(fromColor);
+   fadeFromG = myStrip->getGreen(fromColor);
+   fadeFromB = myStrip->getBlue(fromColor);
+  
+   fadeToR = myStrip->getRed(toColor);
+   fadeToG = myStrip->getGreen(toColor);
+   fadeToB = myStrip->getBlue(toColor);
+
+  fadeCurR = fadeFromR;
+  fadeCurG = fadeFromG;
+  fadeCurB = fadeFromB;
+
+  fadePhase = fadeFadeIn;
+  fillColor(fromColor);
+  
+  myStrip->setStripChanged(); // mark the strip changed
+}
+
+
+void NeoWindow::fadeEfxUpdate(void)
+{
+  // uses ternary operator to handle incr/decr direction
+  if (fadePhase == fadeFadeIn){
+    // fade in, fancy way to linearly ramp each of RGB, regardless of whether from>to or from<to
+    fadeCurR = ((fadeToR > fadeCurR) ? (fadeCurR+1) : ((fadeToR != fadeCurR) ? fadeCurR-1 : fadeCurR));
+    fadeCurG = ((fadeToG > fadeCurG) ? (fadeCurG+1) : ((fadeToG != fadeCurG) ? fadeCurG-1 : fadeCurG));
+    fadeCurB = ((fadeToB > fadeCurB) ? (fadeCurB+1) : ((fadeToB != fadeCurB) ? fadeCurB-1 : fadeCurB));
+
+    // faded all the way in? are we cycling?
+    if (fadeCurR == fadeToR && fadeCurG == fadeToG && fadeCurB == fadeToB) {
+      fadeEfxEndCheck();
+      switch (fadeType) {
+        case fadeTypeCycle:
+          printId(); Serial.println("FadeEfx: cycled all the way in; fade out");
+          // faded all in, cycle out
+          fadePhase = fadeFadeOut;
+          break;
+        case fadeTypeJumpBack:
+          printId(); Serial.println("FadeEfx: cycled all the way in; not cycle, jump back");
+          fadeEfxEndCheck();
+          fillColor(fadeFromColor);
+          fadeCurR = fadeFromR;
+          fadeCurG = fadeFromG;
+          fadeCurB = fadeFromB;
+        case fadeTypeOnce:
+        default:
+          //thats all
+          break;
+      }
+    }
+  } else { // fade out
+    // fade in, fancy way to linearly ramp each of RGB, regardless of whether from>to or from<to
+    fadeCurR = ((fadeFromR > fadeCurR) ? (fadeCurR+1) : ((fadeFromR != fadeCurR) ? fadeCurR-1 : fadeCurR));
+    fadeCurG = ((fadeFromG > fadeCurG) ? (fadeCurG+1) : ((fadeFromG != fadeCurG) ? fadeCurG-1 : fadeCurG));
+    fadeCurB = ((fadeFromB > fadeCurB) ? (fadeCurB+1) : ((fadeFromB != fadeCurB) ? fadeCurB-1 : fadeCurB));
+
+    // faded all the way out?
+    if (fadeCurR == fadeFromR && fadeCurG == fadeFromG && fadeCurB == fadeFromB) {
+      Serial.println("FadeEfx: cycled all the way out; fade in");
+      fadePhase = fadeFadeIn;
+      fadeEfxEndCheck();
+    }
+  }
+   fillColor(myStrip->Color(fadeCurR, fadeCurG, fadeCurB));
+ 
+}
+void NeoWindow::fadeEfxEndCheck()
+{
+  fadeCount++;
+  if (fadeMaxCount > 0 && fadeCount > fadeMaxCount)
+  {
+    efxDone = true;
+  }
 }
 

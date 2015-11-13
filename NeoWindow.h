@@ -14,13 +14,12 @@
 
 class NeoWindow 
 {
-private:
+private:  
+// class variables
   // for use herein.
   typedef void (NeoWindow::*NeoWindowUpdateFunc)(void);
-  
-// class variables
     static uint32_t currTime; // current Millis 
-    static int s_nIDGenerator;
+    static int s_nIDGenerator; // used to generate uniqueID for each window
 
 public:
   // Instance Constructor:
@@ -60,8 +59,8 @@ private:
   uint32_t effectDelay; // delay between updates of current effect
 
   
- ////////////
- // Different effects go here
+////////////////////////////////////
+// Different effects go here
 // instance variables to support specific effects
 // cleaner design might move these into some sort of Helper Class
 // for each effect there is a public/private section
@@ -72,6 +71,11 @@ private:
 // addtional code for other efx later or in subclass
 //  void setPongEfx(uint32_t color, uint32_t delayTime);
 //  void setRainbowEfx(uint32_t delayTime);
+
+public:
+  void setHoldEfx(int delayTime);
+private:
+  void holdUpdateEfx(void);
 
 public:
   void setCircleEfx(uint32_t color, uint32_t delayTime); // Circle one pixel of color around window
@@ -97,7 +101,48 @@ private:
   boolean blink_state;
   int blink_maxCount;
   int blink_step;
+
+public:
+  void setSparkleEfx(uint32_t color, int flashTime, int tweenTime, int count = 0);
+private:
+  void sparkleEfxUpdate(void);
+  uint32_t sparkleColor;
+  int sparkleFlashTime;
+  int sparkleTweenTime;
+  int sparkleMaxCount;
+  int sparkleCount;
+  int sparkleCurPixel;
+  int sparkleState;
+
+// Fade = linear fade between two colors, cycle makes if fade back
+public:
+  static const int fadeTypeOnce = 0;
+  static const int fadeTypeCycle = 1;
+  static const int fadeTypeJumpBack = 2;
+  void setFadeEfx(uint32_t fromColor, uint32_t toColor, int fadeTime, int type = fadeTypeCycle, int count = 0);
+private:
+  void fadeEfxUpdate(void);
+  void fadeEfxEndCheck(void);
+  uint32_t fadeFromColor;
+  uint32_t fadeToColor;
   
+  int fadeType;
+  int fadeMaxCount;
+  int fadeCount;
+  // internally we use seperate RGB values
+  int fadeFromR;
+  int fadeFromG;
+  int fadeFromB;
+  
+  int fadeToR;
+  int fadeToG;
+  int fadeToB;
+
+  int fadeCurR;
+  int fadeCurG;
+  int fadeCurB;
+
+  boolean fadePhase;
 };
 
 

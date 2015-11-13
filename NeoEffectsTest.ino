@@ -11,7 +11,9 @@
 // these are assigned to odd ordering of pins for reasons internal to Octo library
 // although we are not using the library, we may use the Octo interface board 
 // which provides access to these pins via 2 RJ45 connectors.
-#define STRIP_1_PIN 2
+//#define STRIP_1_PIN 2
+// strip moved to pin 3 when not using Octo board
+#define STRIP_1_PIN 3
 //#define STRIP_2_PIN 14
 //#define STRIP_3_PIN 7
 //#define STRIP_4_PIN 8
@@ -52,7 +54,16 @@ NeoWindow ring8 = NeoWindow(&strip1, RING_8_START, SMALL_NEORING_SIZE);
 
 NeoWindow *rings[] = {&ring1, &ring2, &ring3, &ring4, &ring5, &ring6, &ring7, &ring8};
 
+int anoukRed = 128;
+int anoukGreen = 0;
+int anoukBlue = 50;
+
 uint32_t anoukPurple = strip1.Color(128, 0, 50);
+
+uint32_t randomAnouk() 
+{
+  return Adafruit_NeoPixel::Color(random(0,255),0,random(0,255));
+}
 
 void setup() {
   delay(5000); // delay a bit when we start so we can open arduino serial monitor window
@@ -62,31 +73,38 @@ void setup() {
   
   strip1.begin();
 
- // if dont setBrightness down, we get odd effects
- strip1.setBrightness(100);
+ // if dont setBrightness down, we get odd effects.  probably because it draws too much power
+// strip1.setBrightness(100);
+// strip1.setBrightness(180);
+// strip1.setBrightness(200);
 
  strip1.clearStrip();
  strip1.show();
-delay(1000);
-
+  delay(1000);    
 //  strip1.fillStrip(Adafruit_NeoPixel::Color(255,255,255));
   strip1.fillStrip(anoukPurple);  //Adafruit_NeoPixel::Color(128,128,128));
   strip1.show();
- delay(1000);
- strip1.clearStrip();
+  delay(1000);
+  strip1.clearStrip();
   strip1.show();
-delay(1000);
+  delay(1000);
   
   // put your setup code here, to run once:
-  ring1.setWipeEfx(strip1.randomColor(),100 );
+//  ring1.setWipeEfx(strip1.randomColor(),100 );
+  ring1.setWipeEfx(randomAnouk(),100 );
   ring2.setWipeEfx(anoukPurple,100 );
-  ring3.setBlinkEfx(anoukPurple, 250, 5);
+  ring3.setBlinkEfx(anoukPurple, 250, 10);
   
-  ring4.setCircleEfx(strip1.randomColor(), 200);
-  ring5.setCircleEfx(Adafruit_NeoPixel::Color(128, 0, 128), 10);
-  ring6.setCircleEfx(Adafruit_NeoPixel::Color(128, 128, 128), 500);
-  ring7.setCircleEfx(Adafruit_NeoPixel::Color(0, 128, 128), 500);
-  ring8.setCircleEfx(Adafruit_NeoPixel::Color(128, 0,0), 50);
+  ring4.setCircleEfx(randomAnouk(), 200);
+  ring5.setFadeEfx(0, anoukPurple, 100, ring5.fadeTypeJumpBack, 0);
+//  ring5.setCircleEfx(Adafruit_NeoPixel::Color(128, 0, 128), 10);
+  ring6.setSparkleEfx(anoukPurple, 10, 200);
+  
+  ring7.setFadeEfx(anoukPurple, strip1.Color(128,128,128), 10, ring7.fadeTypeCycle, 0);
+//  ring7.setFadeEfx(anoukPurple, strip1.White, 10, ring7.fadeTypeCycle, 0);
+//  ring7.setCircleEfx(Adafruit_NeoPixel::Color(0, 128, 128), 500);
+  ring8.setFadeEfx(0, anoukPurple, 1000, ring8.fadeTypeOnce, 0);
+//  ring8.setCircleEfx(anoukPurple, 50);
 
   // now for each Window
 //  for (int i=0; i< numRings;i++)
@@ -99,6 +117,8 @@ Serial.println("Setup Done");
 
 int ring2State = false;
 
+int ring3State = 0;
+
 void loop() {
     
   // grab the current time in class method
@@ -106,7 +126,8 @@ void loop() {
 
   // check all inputs and update Effects per Window, etc
   if (ring1.effectDone())
-      ring1.setWipeEfx(strip1.randomColor(),100 );
+      ring1.setWipeEfx(randomAnouk(),100 );
+      
   if (ring2.effectDone()){
     if (ring2State)
     {
@@ -117,10 +138,26 @@ void loop() {
       ring2State = true;
     }
   }
-  if (ring3.effectDone())
-     ring3.setBlinkEfx(anoukPurple, 250, 10);
+  if (ring3.effectDone()) {
+    switch (ring3State) {
+      case 0:
+        ring3.fillColor(anoukPurple);
+        ring3.setHoldEfx(5000);
+        ring3State = 1;
+        break;
+      case 1:
+        ring3.fillBlack();
+        ring3.setHoldEfx(5000);
+        ring3State = 2;
+        break;
+      case 2:
+      default:
+         ring3.setBlinkEfx(anoukPurple, 250, 10);
+         ring3State = 0;
+    }
+  }
   if (ring4.effectDone())
-      ring4.setCircleEfx(strip1.randomColor(), 200);
+      ring4.setCircleEfx(randomAnouk(), 200);
 
   // now update each Window
   for (int i=0; i< numRings;i++)

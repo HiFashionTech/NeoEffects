@@ -37,6 +37,12 @@ class NeoStrip: public Adafruit_NeoPixel {
  //////
  // helper function to create random Color (unit32_t of r, g,b)
  static uint32_t randomColor(void) { return Adafruit_NeoPixel::Color(random(0,255),random(0,255),random(0,255));}
+ static uint8_t getRed(uint32_t c) { return (uint8_t)(c >> 16);}
+ static uint8_t getGreen(uint32_t c) { return (uint8_t)(c >>  8);}
+ static uint8_t getBlue(uint32_t c) { return (uint8_t)c;}
+
+ static const uint32_t White;
+ static uint32_t colorWheel(byte WheelPos);
  
 };
 
