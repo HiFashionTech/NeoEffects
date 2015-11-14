@@ -1,6 +1,6 @@
-## Motivation
+Provides an Arduino library called **NeoEffects** based on AdaFruit_NeoPixel library for LED Strips (rings, matrices, etc) that avoids the blocking delay() function.
 
-Creating a library based on AdaFruit_NeoPixel library for LED Strips (rings, matrices, etc) that avoids the blocking delay() function.
+## Motivation
 
 Most of the example code for the AdaFruit_NeoPixel library uses the arduino delay().  We had a several projects that use upwards of 8 of the Adafruit NeoPixel 12-LED rings for a Fashion Tech workshop with [Anouk Wipprecht] (http://www.anoukwipprecht.nl). The blocking `delay()` made these difficult, requiring multiple Teensy controllers to get multiple simultaneous effects.
 
@@ -22,6 +22,10 @@ This won’t work well with daisy chained rings (effectively making a longer str
 The classic way to avoid a delay is to use the millis() function to check if some time period has passed.  For a full discussion, see [http://playground.arduino.cc/Code/AvoidDelay](http://playground.arduino.cc/Code/AvoidDelay).
 
 A second issue is the need to support effects that happen on one individual ring when multiple rings are daisy chained together.  An effect needs to know the absolute index of the first pixel and the number of pixels in the ring.
+
+## Installation
+
+Download this code into a directory called "NeoEffects", which must be a subdirectory within the [Arduino Library](https://www.arduino.cc/en/Hacking/Libraries) directory. If you are cloning this repository, just clone it into your Arduino Library directory.
 
 ## Approach
 
