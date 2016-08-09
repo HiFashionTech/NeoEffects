@@ -15,6 +15,10 @@ NeoStrip::NeoStrip(uint16_t n, uint8_t p, uint8_t t)
 {
   stripChanged = false;
   myId = s_nIDGenerator++;
+  // allocate and initialize array of active flags
+  // have this at Strip level vs Window to reduce #dynamic memory alloc
+  pixelActive = new boolean[n];
+  for (int i=0; i<n; i++) pixelActive[i]=false;
 }
 
 void NeoStrip::printId(void)
@@ -67,8 +71,49 @@ void NeoStrip::fillStrip(uint32_t c)
 {
   for (int i=0;i < numPixels();i++)
     setPixelColor(i, c);
-    setStripChanged();
+  setStripChanged();
 }
+
+void NeoStrip::clearActive()
+{
+    for (int i=0;i < numPixels();i++)
+       setPixelInactive(i);
+}
+
+void NeoStrip::setPixelActive(int idx)
+{
+  pixelActive[idx] = true;
+}
+void NeoStrip::setPixelInactive(int idx)
+{
+  pixelActive[idx] = false;
+}
+boolean NeoStrip::isPixelActive(int idx)
+{
+  return pixelActive[idx];
+}
+  
+uint32_t NeoStrip::randomColor(uint32_t fromColor, uint32_t toColor)
+{
+  uint8_t fromR, toR;
+  uint8_t fromG, toG;
+  uint8_t fromB, toB;
+  fromR = NeoStrip::getRed(fromColor);
+  fromG = NeoStrip::getGreen(fromColor);
+  fromB = NeoStrip::getBlue(fromColor);
+  
+  toR = NeoStrip::getRed(toColor);
+  toG = NeoStrip::getGreen(toColor);
+  toB = NeoStrip::getBlue(toColor);
+  
+  return Adafruit_NeoPixel::Color(random(fromR,toR), random(fromG,toG),random(fromB,toB));
+}
+
+uint32_t NeoStrip::randomWheelColor(void)
+{
+    return colorWheel(random(0,255));
+}
+
 
 // Input a value 0 to 255 to get a color value.
 // The colours are a transition r - g - b - back to r.
